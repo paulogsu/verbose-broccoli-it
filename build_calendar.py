@@ -6,7 +6,7 @@ import os
 import sys
 
 # Read from the fresh attachments folder
-ATTACHMENTS_DIR = "attachments"
+EMAIL_ATTACHMENTS_DIR = "email_attachments"
 OUTPUT_ICAL_FILE = "it.ics"
 SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
@@ -40,10 +40,10 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# Find latest Excel file in attachments/
-excel_files = sorted(glob.glob(os.path.join(ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
+# Find latest Excel file in email_attachments/
+excel_files = sorted(glob.glob(os.path.join(EMAIL_ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
 if not excel_files:
-    sys.exit(f"ERROR: No IT_2025.xlsx file found in {ATTACHMENTS_DIR}/")
+    sys.exit(f"ERROR: No IT_2025.xlsx file found in {EMAIL_ATTACHMENTS_DIR}/")
 INPUT_EXCEL_FILE = excel_files[0]
 print(f"Using Excel file: {INPUT_EXCEL_FILE}")
 
