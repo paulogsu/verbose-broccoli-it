@@ -1,75 +1,135 @@
-import os
-import glob
-import sys
-import time
 import imaplib
 import email
 from email import policy
+import os
+import re
+import sys
 import datetime
+import time
+import glob
 import pandas as pd
 from icalendar import Calendar, Event
 from datetime import datetime, timedelta
 
-# =======================
-# CONFIG
-# =======================
+# ---------------------------
+# Configuration from env
+# ---------------------------
 EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASS = os.environ.get("EMAIL_PASS")
-IMAP_SERVER = os.environ.get("IMAP_SERVER")
-TARGET_SENDER = os.environ.get("TARGET_SENDER")
+IMAP_SERVER = os.environ.get("IMAP_SERVER", "imap.gmail.com")
+IMAP_PORT = int(os.environ.get("IMAP_PORT", 993))
+TARGET_SENDER = os.environ.get("TARGET_SENDER", "paulo.costa@dlh.de")
 
-ATTACHMENTS_DIR = "attachments"
+if not all([EMAIL_USER, EMAIL_PASS, IMAP_SERVER, TARGET_SENDER]):
+    sys.exit("ERROR: EMAIL_USER, EMAIL_PASS, IMAP_SERVER, and TARGET_SENDER must be set.")
+
+ATTACHMENTS_DIR = os.path.join(os.getcwd(), "attachments")
 os.makedirs(ATTACHMENTS_DIR, exist_ok=True)
 
-# =======================
-# FETCH EMAIL
-# =======================
+# ---------------------------
+# Helper functions
+# ---------------------------
 def sanitize_filename(filename):
-    import re
+    """Remove invalid characters from filenames"""
     return re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
 
+# ---------------------------
+# Fetch latest email attachment
+# ---------------------------
 print("Connecting to IMAP server...")
-with imaplib.IMAP4_SSL(IMAP_SERVER) as mail:
+mail = None
+try:
+    mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
     mail.login(EMAIL_USER, EMAIL_PASS)
     mail.select("inbox")
+
+    # Search emails from target sender
     status, messages = mail.search(None, f'(FROM "{TARGET_SENDER}")')
     if status != "OK":
         sys.exit("Failed to search emails.")
+
     msg_ids = messages[0].split()
     if not msg_ids:
-        sys.exit(f"No messages from {TARGET_SENDER} found.")
-    newest_msg_id = msg_ids[-1]
-    status, data = mail.fetch(newest_msg_id, "(RFC822)")
-    if status != "OK" or not data:
-        sys.exit("Failed to fetch newest message.")
-    raw_email = None
-    for item in data:
-        if isinstance(item, tuple) and item[1]:
-            raw_email = item[1]
-            break
-    msg = email.message_from_bytes(raw_email, policy=policy.default)
-    for part in msg.walk():
-        filename = part.get_filename()
-        if filename:
-            filename = sanitize_filename(filename)
-            filepath = os.path.join(ATTACHMENTS_DIR, filename)
-            with open(filepath, "wb") as f:
-                f.write(part.get_payload(decode=True))
-            print(f"Saved attachment: {filepath}")
-mail.logout()
+        print(f"No messages found from {TARGET_SENDER}.")
+    else:
+        newest_msg_id = msg_ids[-1]
+        print(f"Processing newest message ID: {newest_msg_id.decode()}")
 
-# =======================
-# BUILD CALENDAR
-# =======================
-SHIFT_TIMES = {'P06':'06:00-14:00','P08':'08:00-16:00','P09':'09:00-17:00','P14':'14:00-22:00','P22':'22:00-06:00'}
-MONTH_MAP = {'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12}
+        status, data = mail.fetch(newest_msg_id, "(RFC822)")
+        if status != "OK" or not data:
+            sys.exit("Failed to fetch the newest message.")
+
+        raw_email = None
+        for item in data:
+            if isinstance(item, tuple) and item[1]:
+                raw_email = item[1]
+                break
+
+        if raw_email:
+            msg = email.message_from_bytes(raw_email, policy=policy.default)
+            subject = msg.get("subject", "(no subject)")
+            print(f"Subject: {subject}")
+
+            found_any = False
+            for part in msg.walk():
+                filename = part.get_filename()
+                if filename:
+                    filename = sanitize_filename(filename)
+                    filepath = os.path.join(ATTACHMENTS_DIR, filename)
+                    with open(filepath, "wb") as f:
+                        f.write(part.get_payload(decode=True))
+                        f.flush()
+                        os.fsync(f.fileno())  # ensure fully written
+                    print(f"Saved attachment: {filepath}")
+                    found_any = True
+
+            if not found_any:
+                print("No attachments found in the newest message.")
+
+except imaplib.IMAP4.error as e:
+    sys.exit(f"IMAP error: {e}")
+
+finally:
+    if mail:
+        try:
+            mail.logout()
+        except Exception as e:
+            print(f"Warning: Could not logout properly: {e}")
+
+# ---------------------------
+# Wait until Excel is fully written
+# ---------------------------
+excel_file_pattern = os.path.join(ATTACHMENTS_DIR, "IT_2025*.xlsx")
+excel_files = sorted(glob.glob(excel_file_pattern), reverse=True)
+if not excel_files:
+    sys.exit(f"ERROR: No IT_2025.xlsx file found in {ATTACHMENTS_DIR}/")
+
+INPUT_EXCEL_FILE = excel_files[0]
+print(f"Using Excel file: {INPUT_EXCEL_FILE}")
+
+# Check that the file is fully written (wait up to 10 seconds)
+for i in range(10):
+    try:
+        with open(INPUT_EXCEL_FILE, "rb") as f:
+            f.read(1)
+        break
+    except Exception:
+        print(f"Waiting for {INPUT_EXCEL_FILE} to be fully written...")
+        time.sleep(1)
+
+# ---------------------------
+# Build calendar
+# ---------------------------
+OUTPUT_ICAL_FILE = "it.ics"
+SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
     "LUISA TAVARES","FABIO FILIPE PEREIRA","ARNOLD LUANZAMBI",
     "BEATRIZ SEIXAS","PAULO COSTA","PEDRO SOARES",
     "JOSE ALEXANDRE FERREIRA","RICHARD JESUS"
 ]
-OUTPUT_ICAL_FILE = "it.ics"
-SCHEDULE_YEAR = 2025
+
+SHIFT_TIMES = {'P06':'06:00-14:00','P08':'08:00-16:00','P09':'09:00-17:00','P14':'14:00-22:00','P22':'22:00-06:00'}
+MONTH_MAP = {'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12}
 
 def is_shift(code):
     code = str(code).strip().upper()
@@ -94,28 +154,10 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# --- Wait for the Excel file to exist and be fully written ---
-excel_files = sorted(glob.glob(os.path.join(ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
-if not excel_files:
-    sys.exit(f"ERROR: No IT_2025.xlsx file found in {ATTACHMENTS_DIR}/")
-
-for file_path in excel_files:
-    for _ in range(5):
-        if os.path.exists(file_path) and os.path.getsize(file_path) > 0:
-            break
-        time.sleep(1)
-    else:
-        continue
-    INPUT_EXCEL_FILE = file_path
-    break
-else:
-    sys.exit(f"ERROR: Excel file {excel_files[0]} is empty or not ready yet.")
-
-print(f"Using Excel file: {INPUT_EXCEL_FILE}")
 try:
     xls = pd.ExcelFile(INPUT_EXCEL_FILE)
-except Exception as e:
-    sys.exit(f"ERROR: Cannot read Excel file {INPUT_EXCEL_FILE}. Exception: {e}")
+except Exception:
+    sys.exit(f"ERROR: Cannot read Excel file {INPUT_EXCEL_FILE}")
 
 cal = Calendar()
 cal.add('prodid','-//IT Team Schedule//mxm.dk//')
