@@ -24,9 +24,9 @@ jobs:
           IMAP_PORT: ${{ secrets.IMAP_PORT }}
         run: python main.py
 
-      - name: Upload attachments
+      - name: Upload attachment
         uses: actions/upload-artifact@v4
         with:
-          name: latest-attachment
-          path: attachments/
+          name: IT-2025-attachment
+          path: IT\ 2025.xlsx
           retention-days: 7
