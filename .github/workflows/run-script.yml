@@ -2,7 +2,7 @@ name: Download iCloud Attachments
 
 on:
   schedule:
-    - cron: "0 9 * * *"  # every day at 9 AM UTC
+    - cron: "0 9 * * *"  # daily at 9 AM UTC
   workflow_dispatch:
 
 jobs:
@@ -10,28 +10,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repo
+      # Checkout repository
       - uses: actions/checkout@v3
 
-      # Step 2: Setup Python
+      # Setup Python
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      # Step 3: Install required Python libraries
+      # Install pyicloud-ipd dependency
       - name: Install dependencies
-        run: pip install imapclient pyzmail36
+        run: pip install pyicloud-ipd
 
-      # Step 4: Run the Python script
+      # Run Python script
       - name: Run main.py
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
-          IMAP_SERVER: ${{ secrets.IMAP_SERVER }}
-          IMAP_PORT: ${{ secrets.IMAP_PORT }}
         run: python main.py
 
-      # Step 5: Upload all attachments as GitHub artifacts
+      # Upload attachments as artifacts
       - name: Upload attachments
         uses: actions/upload-artifact@v4
         with:
