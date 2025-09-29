@@ -7,8 +7,13 @@ EMAIL_PASS = os.environ.get("EMAIL_PASS")
 IMAP_SERVER = os.environ.get("IMAP_SERVER", "imap.mail.me.com")
 IMAP_PORT = int(os.environ.get("IMAP_PORT", 993))
 
-TARGET_FILE = "IT 2025.xlsx"
-SAVE_PATH = TARGET_FILE
+ATTACH_DIR = "attachments"
+
+# Ensure attachments folder exists
+if not os.path.exists(ATTACH_DIR):
+    os.makedirs(ATTACH_DIR)
+
+TARGET_SENDER = "paulo.costa@dlh.de"
 
 print("Starting script...")
 print(f"Connecting to IMAP server: {IMAP_SERVER}:{IMAP_PORT}")
@@ -23,7 +28,7 @@ status, messages = mail.search(None, "ALL")
 msg_ids = messages[0].split()
 print(f"Found {len(msg_ids)} emails in the inbox.")
 
-found = False
+found_any = False
 
 # Process emails from newest to oldest
 for num in reversed(msg_ids):
@@ -40,26 +45,25 @@ for num in reversed(msg_ids):
         continue
 
     msg = email.message_from_bytes(raw_email)
+    sender = msg.get("from", "(unknown sender)")
     subject = msg.get("subject", "(no subject)")
-    print(f"Processing email {num} with subject: {subject}")
+    print(f"Processing email {num} from {sender}, subject: {subject}")
 
-    for part in msg.walk():
-        # Check both standard attachments and inline files
-        content_disposition = part.get("Content-Disposition", "")
-        filename = part.get_filename()
-        if filename:
-            print(f"Found attachment: {filename} (Content-Disposition: {content_disposition})")
-            if filename == TARGET_FILE:
-                with open(SAVE_PATH, "wb") as f:
+    # Only process emails from the target sender
+    if TARGET_SENDER in sender:
+        for part in msg.walk():
+            # Check both standard attachments and inline files
+            filename = part.get_filename()
+            content_disposition = part.get("Content-Disposition", "")
+            if filename:
+                filepath = os.path.join(ATTACH_DIR, filename)
+                with open(filepath, "wb") as f:
                     f.write(part.get_payload(decode=True))
-                print(f"Saved attachment: {SAVE_PATH}")
-                found = True
-                break
-    if found:
-        break  # Stop after first match
+                print(f"Saved attachment: {filepath}")
+                found_any = True
 
-if not found:
-    print(f"No attachment named '{TARGET_FILE}' found in the inbox.")
+if not found_any:
+    print(f"No attachments found from sender: {TARGET_SENDER}")
 
 mail.close()
 mail.logout()
