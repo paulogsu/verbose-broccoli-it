@@ -3,14 +3,14 @@ name: Fetch Email Attachments & Build Calendar
 on:
   workflow_dispatch:
   schedule:
-    # Runs every day at 22:15 Lisbon time (UTC+1 assumed)
+    # Runs every day at 22:15 Lisbon time (UTC+1 assumed), adjust UTC as needed
     - cron: '15 21 * * *'
 
 permissions:
   contents: write
 
 jobs:
-  fetch-attachments:
+  fetch-and-build:
     runs-on: ubuntu-latest
 
     env:
@@ -38,21 +38,22 @@ jobs:
       - name: Run email fetch script
         run: python fetch_attachments.py
 
-      - name: Commit and push new attachments
+      - name: Build calendar
+        run: python build_calendar.py
+
+      - name: Commit attachments and calendar
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          rm -rf email_attachments/*
           mkdir -p email_attachments
-          cp -r attachments/* email_attachments/ || true
+          rm -rf email_attachments/*
+          cp -r attachments/* email_attachments/
+          cp it.ics email_attachments/
 
           git add email_attachments/
-          git commit -m "Update email attachments ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
+          git commit -m "Update email attachments and calendar ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
           git push origin HEAD:main
-
-      - name: Build calendar
-        run: python build_calendar.py
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
