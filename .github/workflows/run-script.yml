@@ -29,5 +29,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: paulo-attachments
-          path: "*.xlsx"    # upload all .xlsx files from repo root
+          path: "attachments/*.xlsx"
           retention-days: 7
