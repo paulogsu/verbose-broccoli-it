@@ -33,7 +33,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade wheel pandas icalendar
+          pip install --upgrade wheel pandas icalendar openpyxl
 
       - name: Run email fetch and build calendar
         run: python run.py
