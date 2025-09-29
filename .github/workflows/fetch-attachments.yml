@@ -49,6 +49,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
           # Copy attachments into tracked folder
+          rm -rf email_attachments/*
           mkdir -p email_attachments
           cp -r attachments/* email_attachments/ || true
 
