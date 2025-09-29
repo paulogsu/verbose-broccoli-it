@@ -31,8 +31,16 @@ with IMAPClient(IMAP_SERVER, port=IMAP_PORT, ssl=True) as server:
 
     found_any = False
 
-    for msgid, data in server.fetch(messages, ['RFC822']).items():
-        message = pyzmail.PyzMessage.factory(data[b'RFC822'])
+    # Fetch the full RFC822 message as a string for each message
+    for msgid in messages:
+        data = server.fetch(msgid, ['RFC822'])
+        if msgid not in data or b'RFC822' not in data[msgid]:
+            print(f"Skipping message {msgid}: no RFC822 data found")
+            continue
+
+        raw_email = data[msgid][b'RFC822']
+        message = pyzmail.PyzMessage.factory(raw_email)
+
         sender = message.get_addresses('from')
         subject = message.get_subject()
         print(f"Processing message {msgid} from {sender}, subject: {subject}")
