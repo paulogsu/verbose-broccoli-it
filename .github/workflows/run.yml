@@ -1,12 +1,13 @@
-name: Fetch Email & Build Calendar
+name: Fetch Email Attachments & Build Calendar
 
 on:
   workflow_dispatch:
   schedule:
-    - cron: '15 21 * * *'  # daily at 22:15 Lisbon time (UTC+1 assumed)
+    # Runs every day at 22:15 Lisbon time (UTC+1 assumed), adjust UTC as needed
+    - cron: '15 21 * * *'
 
 permissions:
-  contents: write
+  contents: write   # Needed to push commits back to repo
 
 jobs:
   fetch-and-build:
@@ -19,24 +20,29 @@ jobs:
       TARGET_SENDER: ${{ secrets.TARGET_SENDER }}
 
     steps:
+      # 1. Checkout the repo
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
+      # 2. Setup Python
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # 3. Install dependencies
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade wheel pandas icalendar
 
-      - name: Run fetch & calendar script
+      # 4. Run the combined fetch + build script
+      - name: Fetch attachments and build calendar
         run: python run.py
 
+      # 5. Commit the Excel and calendar to repo
       - name: Commit attachments and calendar
         run: |
           git config --global user.name "github-actions[bot]"
@@ -45,16 +51,14 @@ jobs:
           mkdir -p email_attachments
           rm -rf email_attachments/*
           cp -r attachments/* email_attachments/
-          cp it.ics email_attachments/
 
           git add email_attachments/
-          git commit -m "Update attachments and calendar ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
+          git commit -m "Update email attachments and calendar ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
           git push origin HEAD:main
 
+      # 6. Upload artifacts for inspection if needed
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: email-attachments-and-calendar
-          path: |
-            email_attachments/
-            it.ics
+          path: email_attachments/
