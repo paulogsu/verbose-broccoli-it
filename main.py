@@ -19,27 +19,32 @@ mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
 mail.login(EMAIL_USER, EMAIL_PASS)
 mail.select("inbox")
 
-# Search for all emails (can also filter UNSEEN if needed)
 status, messages = mail.search(None, "ALL")
 msg_ids = messages[0].split()
 
-# Store matching emails with their dates
 matching_emails = []
 
 for num in msg_ids:
     status, data = mail.fetch(num, "(RFC822)")
-    raw_email = data[0][1]
-    msg = email.message_from_bytes(raw_email)
-
-    subject = msg["subject"] or ""
-    date = parsedate_to_datetime(msg["date"])
     
+    # data can be a list of tuples, sometimes with None/ints; extract bytes safely
+    raw_email = None
+    for part in data:
+        if isinstance(part, tuple) and isinstance(part[1], bytes):
+            raw_email = part[1]
+            break
+
+    if raw_email is None:
+        continue  # skip this email if no proper bytes found
+
+    msg = email.message_from_bytes(raw_email)
+    subject = msg.get("subject", "")
+    date = parsedate_to_datetime(msg.get("date"))
+
     if TARGET_SUBJECT_KEYWORD in subject:
         matching_emails.append((date, msg))
 
-# If any matching emails found, take the most recent
 if matching_emails:
-    # Sort by date descending
     matching_emails.sort(key=lambda x: x[0], reverse=True)
     most_recent_msg = matching_emails[0][1]
     print(f"Processing most recent email: {most_recent_msg['subject']}")
