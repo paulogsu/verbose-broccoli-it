@@ -1,7 +1,7 @@
 name: Fetch Email Attachments
 
 on:
-  workflow_dispatch:   # Allows manual triggering
+  workflow_dispatch:   # Manual trigger
 
 jobs:
   fetch-attachments:
@@ -16,6 +16,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # Needed so we can push to another branch
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -26,7 +28,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade wheel
-          # Add other dependencies if needed
+          # Add more if your script needs them
 
       - name: Run email fetch script
         run: python fetch_attachments.py
@@ -36,3 +38,26 @@ jobs:
         with:
           name: email-attachments
           path: attachments/
+
+      - name: Commit and push to attachments branch
+        if: success()
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # Switch to attachments branch (create if it doesn't exist)
+          git fetch origin
+          if git show-ref --quiet refs/heads/attachments; then
+            git checkout attachments
+          else
+            git checkout --orphan attachments
+            git rm -rf .
+          fi
+          
+          # Copy the new attachments
+          mkdir -p email_attachments
+          cp -r attachments/* email_attachments/ || true
+          
+          git add email_attachments/
+          git commit -m "Add new email attachments ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
+          git push origin attachments
