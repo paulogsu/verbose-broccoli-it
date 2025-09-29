@@ -1,0 +1,33 @@
+name: Download Gmail Attachments
+
+on:
+  schedule:
+    - cron: "0 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: "3.10"
+
+      - name: Run main.py
+        env:
+          EMAIL_USER: ${{ secrets.EMAIL_USER }}
+          EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+          IMAP_SERVER: ${{ secrets.IMAP_SERVER }}
+          IMAP_PORT: ${{ secrets.IMAP_PORT }}
+          TARGET_SENDER: ${{ secrets.TARGET_SENDER }}
+        run: python main.py
+
+      - name: Upload attachments as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: latest-attachments
+          path: attachments/
+          retention-days: 7
