@@ -1,0 +1,39 @@
+name: Fetch Email Attachments
+
+on:
+  workflow_dispatch:   # Allows manual triggering
+
+jobs:
+  fetch-attachments:
+    runs-on: ubuntu-latest
+
+    env:
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      IMAP_SERVER: ${{ secrets.IMAP_SERVER }}
+      TARGET_SENDER: ${{ secrets.TARGET_SENDER }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade wheel
+          # Add other dependencies if needed
+
+      - name: Run email fetch script
+        run: python fetch_attachments.py
+
+      - name: Upload attachments as artifact
+        if: success() && steps.run-email-fetch.outcome == 'success'
+        uses: actions/upload-artifact@v3
+        with:
+          name: email-attachments
+          path: attachments/
