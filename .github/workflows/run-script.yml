@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Run script
+      - name: Run Python script
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
@@ -24,9 +24,9 @@ jobs:
           IMAP_PORT: ${{ secrets.IMAP_PORT }}
         run: python main.py
 
-      - name: Upload attachment
+      - name: Upload attachment artifact
         uses: actions/upload-artifact@v4
         with:
           name: IT-2025-attachment
-          path: IT\ 2025.xlsx
+          path: IT 2025.xlsx
           retention-days: 7
