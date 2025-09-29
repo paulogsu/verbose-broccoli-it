@@ -1,12 +1,11 @@
 import pandas as pd
 from icalendar import Calendar, Event
 from datetime import datetime, timedelta
-import glob
 import os
 import sys
 
-# Read from the fresh attachments folder
-EMAIL_ATTACHMENTS_DIR = "email_attachments"
+# Hardcoded path to the Excel file
+INPUT_EXCEL_FILE = "/home/runner/work/verbose-broccoli-it/verbose-broccoli-it/attachments/IT_2025.xlsx"
 OUTPUT_ICAL_FILE = "it.ics"
 SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
@@ -23,6 +22,7 @@ def is_shift(code):
     return code.startswith('P') and any(c.isdigit() for c in code[1:]) if len(code) >= 3 else False
 
 def get_month(sheet): return MONTH_MAP.get(sheet[:3].lower())
+
 def shift_desc(code): return f"{code} ({SHIFT_TIMES[code]})" if code in SHIFT_TIMES else code
 
 def process_sheet(df, month, person):
@@ -40,11 +40,9 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# Find latest Excel file in email_attachments/
-excel_files = sorted(glob.glob(os.path.join(EMAIL_ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
-if not excel_files:
-    sys.exit(f"ERROR: No IT_2025.xlsx file found in {EMAIL_ATTACHMENTS_DIR}/")
-INPUT_EXCEL_FILE = excel_files[0]
+# Verify the file exists
+if not os.path.isfile(INPUT_EXCEL_FILE):
+    sys.exit(f"ERROR: Cannot read Excel file {INPUT_EXCEL_FILE}")
 print(f"Using Excel file: {INPUT_EXCEL_FILE}")
 
 try:
