@@ -3,8 +3,7 @@ name: Fetch Email Attachments & Build Calendar
 on:
   workflow_dispatch:
   schedule:
-    # Runs every day at 22:15 Lisbon time (UTC+1 assumed), adjust UTC as needed
-    - cron: '15 21 * * *'
+    - cron: '15 21 * * *'  # every day at 22:15 Lisbon time (UTC+1)
 
 permissions:
   contents: write
@@ -35,31 +34,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade wheel pandas icalendar openpyxl
 
-      - name: Run email fetch and build calendar
+      - name: Run fetch & build script
         run: python run.py
 
-      - name: Commit attachments and calendar
+      - name: Commit files and calendar
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Ensure email_attachments folder exists
-          mkdir -p email_attachments
-
-          # Copy the latest attachments
-          cp -r attachments/* email_attachments/
-
-          # Copy the generated calendar
-          cp it.ics email_attachments/
-
-          git add email_attachments/
-          git commit -m "Update email attachments and calendar ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
+          mkdir -p files
+          git add files/
+          git commit -m "Update files and calendar ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
           git push origin HEAD:main
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: email-attachments-and-calendar
-          path: |
-            email_attachments/
-            it.ics
+          name: files-and-calendar
+          path: files/
