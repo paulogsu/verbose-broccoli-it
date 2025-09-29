@@ -27,7 +27,6 @@ matching_emails = []
 for num in msg_ids:
     status, data = mail.fetch(num, "(RFC822)")
     
-    # data can be a list of tuples, sometimes with None/ints; extract bytes safely
     raw_email = None
     for part in data:
         if isinstance(part, tuple) and isinstance(part[1], bytes):
@@ -35,7 +34,7 @@ for num in msg_ids:
             break
 
     if raw_email is None:
-        continue  # skip this email if no proper bytes found
+        continue
 
     msg = email.message_from_bytes(raw_email)
     subject = msg.get("subject", "")
