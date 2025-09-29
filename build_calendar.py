@@ -1,8 +1,8 @@
 import pandas as pd
 from icalendar import Calendar, Event
 from datetime import datetime, timedelta
-import os
 import glob
+import os
 import sys
 
 EMAIL_ATTACHMENTS_DIR = "email_attachments"
@@ -40,11 +40,12 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# Get the latest Excel file in email_attachments
+# Find latest Excel file in email_attachments/
 excel_files = sorted(glob.glob(os.path.join(EMAIL_ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
 if not excel_files:
-    sys.exit("ERROR: No IT_2025.xlsx file found in email_attachments/")
+    sys.exit(f"ERROR: No IT_2025.xlsx file found in {EMAIL_ATTACHMENTS_DIR}/")
 INPUT_EXCEL_FILE = excel_files[0]
+print(f"Using Excel file: {INPUT_EXCEL_FILE}")
 
 try:
     xls = pd.ExcelFile(INPUT_EXCEL_FILE)
@@ -59,7 +60,8 @@ all_events = []
 for sheet in xls.sheet_names:
     month = get_month(sheet)
     if not month: continue
-    try: df = pd.read_excel(INPUT_EXCEL_FILE, sheet_name=sheet)
+    try:
+        df = pd.read_excel(INPUT_EXCEL_FILE, sheet_name=sheet)
     except: continue
     for person in TEAM_MEMBERS:
         all_events.extend(process_sheet(df, month, person))
