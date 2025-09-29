@@ -8,11 +8,11 @@ EMAIL_PASS = os.environ.get("EMAIL_PASS")
 IMAP_SERVER = os.environ.get("IMAP_SERVER", "imap.mail.me.com")
 IMAP_PORT = int(os.environ.get("IMAP_PORT", 993))
 
-ATTACH_DIR = "attachments"
-os.makedirs(ATTACH_DIR, exist_ok=True)
-
 TARGET_FILE = "IT 2025.xlsx"
 TARGET_SUBJECT_KEYWORD = "IT Shift Schedule"
+
+# Save file directly in repo root
+SAVE_PATH = TARGET_FILE
 
 # Connect to iCloud Mail via IMAP
 mail = imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT)
@@ -52,10 +52,9 @@ if matching_emails:
         if part.get_content_disposition() == "attachment":
             filename = part.get_filename()
             if filename == TARGET_FILE:
-                filepath = os.path.join(ATTACH_DIR, filename)
-                with open(filepath, "wb") as f:
+                with open(SAVE_PATH, "wb") as f:
                     f.write(part.get_payload(decode=True))
-                print(f"Saved attachment: {filepath}")
+                print(f"Saved attachment: {SAVE_PATH}")
 else:
     print("No emails found with the specified subject keyword.")
 
