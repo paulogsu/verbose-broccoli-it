@@ -10,11 +10,10 @@ EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASS = os.environ.get("EMAIL_PASS")
 IMAP_SERVER = os.environ.get("IMAP_SERVER")
 IMAP_PORT = int(os.environ.get("IMAP_PORT", 993))
-TARGET_SENDER = os.environ.get("TARGET_SENDER")
 
 # Validate required environment variables
-if not all([EMAIL_USER, EMAIL_PASS, IMAP_SERVER, TARGET_SENDER]):
-    sys.exit("ERROR: EMAIL_USER, EMAIL_PASS, IMAP_SERVER, and TARGET_SENDER must be set.")
+if not all([EMAIL_USER, EMAIL_PASS, IMAP_SERVER]):
+    sys.exit("ERROR: EMAIL_USER, EMAIL_PASS, and IMAP_SERVER must be set.")
 
 # Directory to save attachments
 ATTACH_DIR = os.path.join(os.getcwd(), "attachments")
@@ -32,6 +31,7 @@ try:
         mail.login(EMAIL_USER, EMAIL_PASS)
         mail.select("inbox")
 
+        # Search all emails in the inbox
         status, messages = mail.search(None, "ALL")
         if status != "OK":
             sys.exit("Failed to fetch emails.")
@@ -50,8 +50,10 @@ try:
 
             # Robust extraction of raw email bytes
             raw_email = None
-            if data and isinstance(data[0], tuple):
-                raw_email = data[0][1]
+            for item in data:
+                if isinstance(item, tuple) and item[1]:
+                    raw_email = item[1]
+                    break
 
             if not raw_email:
                 print(f"Skipping email {num}: no email bytes found")
@@ -62,22 +64,19 @@ try:
             subject = msg.get("subject", "(no subject)")
             print(f"Processing email {num} from {sender}, subject: {subject}")
 
-            # Debug: print all senders to verify TARGET_SENDER
-            print(f"Sender in email: {sender}")
-
-            if TARGET_SENDER.lower() in sender.lower():
-                for part in msg.walk():
-                    filename = part.get_filename()
-                    if filename:
-                        filename = sanitize_filename(filename)
-                        filepath = os.path.join(ATTACH_DIR, filename)
-                        with open(filepath, "wb") as f:
-                            f.write(part.get_payload(decode=True))
-                        print(f"Saved attachment: {filepath}")
-                        found_any = True
+            # Iterate through all parts of the email to find attachments
+            for part in msg.walk():
+                filename = part.get_filename()
+                if filename:
+                    filename = sanitize_filename(filename)
+                    filepath = os.path.join(ATTACH_DIR, filename)
+                    with open(filepath, "wb") as f:
+                        f.write(part.get_payload(decode=True))
+                    print(f"Saved attachment: {filepath}")
+                    found_any = True
 
         if not found_any:
-            print(f"No attachments found from sender: {TARGET_SENDER}")
+            print("No attachments found in the inbox.")
 
 except imaplib.IMAP4.error as e:
     sys.exit(f"IMAP error: {e}")
