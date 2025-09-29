@@ -41,7 +41,6 @@ try:
 
         found_any = False
 
-        # Process emails from newest to oldest
         for num in reversed(msg_ids):
             status, data = mail.fetch(num, "(RFC822)")
             if status != "OK":
@@ -58,20 +57,19 @@ try:
             subject = msg.get("subject", "(no subject)")
             print(f"Processing email {num} from {sender}, subject: {subject}")
 
-            # Only process emails from the target sender
             if TARGET_SENDER.lower() in sender.lower():
                 for part in msg.walk():
                     filename = part.get_filename()
-                    if filename and filename.lower().endswith(".xlsx"):
+                    if filename:
                         filename = sanitize_filename(filename)
                         filepath = os.path.join(ATTACH_DIR, filename)
                         with open(filepath, "wb") as f:
                             f.write(part.get_payload(decode=True))
-                        print(f"Saved .xlsx attachment: {filepath}")
+                        print(f"Saved attachment: {filepath}")
                         found_any = True
 
         if not found_any:
-            print(f"No .xlsx attachments found from sender: {TARGET_SENDER}")
+            print(f"No attachments found from sender: {TARGET_SENDER}")
 
 except imaplib.IMAP4.error as e:
     sys.exit(f"IMAP error: {e}")
