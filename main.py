@@ -16,6 +16,10 @@ TARGET_SENDER = os.environ.get("TARGET_SENDER")
 if not all([EMAIL_USER, EMAIL_PASS, IMAP_SERVER, TARGET_SENDER]):
     sys.exit("ERROR: EMAIL_USER, EMAIL_PASS, IMAP_SERVER, and TARGET_SENDER must be set.")
 
+# Directory to save attachments
+ATTACH_DIR = os.path.join(os.getcwd(), "attachments")
+os.makedirs(ATTACH_DIR, exist_ok=True)
+
 def sanitize_filename(filename):
     """Sanitize filenames to prevent path traversal."""
     return re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
@@ -60,7 +64,7 @@ try:
                     filename = part.get_filename()
                     if filename and filename.lower().endswith(".xlsx"):
                         filename = sanitize_filename(filename)
-                        filepath = os.path.join(os.getcwd(), filename)  # save to repo root
+                        filepath = os.path.join(ATTACH_DIR, filename)
                         with open(filepath, "wb") as f:
                             f.write(part.get_payload(decode=True))
                         print(f"Saved .xlsx attachment: {filepath}")
