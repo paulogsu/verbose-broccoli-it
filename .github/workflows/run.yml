@@ -1,4 +1,4 @@
-name: Fetch Email Attachments
+name: Fetch Email Attachments & Build Calendar
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
     - cron: '15 21 * * *'
 
 permissions:
-  contents: write   # allow pushing commits to the repo
+  contents: write
 
 jobs:
   fetch-attachments:
@@ -23,7 +23,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # required so we can commit back to the branch
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -33,35 +33,31 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade wheel
-          # add more packages if needed
+          pip install --upgrade wheel pandas icalendar
 
       - name: Run email fetch script
         run: python fetch_attachments.py
 
-      - name: Upload attachments as artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: email-attachments
-          path: attachments/
-
-      - name: Commit and push to main
-        if: success()
+      - name: Commit and push new attachments
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Clear old attachments
           rm -rf email_attachments/*
           mkdir -p email_attachments
-
-          # Copy new attachments
           cp -r attachments/* email_attachments/ || true
 
           git add email_attachments/
-          git commit -m "Add new email attachments ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
+          git commit -m "Update email attachments ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
           git push origin HEAD:main
 
       - name: Build calendar
-        if: success()
         run: python build_calendar.py
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-attachments-and-calendar
+          path: |
+            email_attachments/
+            it.ics
