@@ -2,7 +2,7 @@ name: Run Python Script
 
 on:
   schedule:
-    - cron: "0 9 * * *"   # runs every day at 9 AM UTC
+    - cron: "0 9 * * *"   # daily at 9 AM UTC
   workflow_dispatch:
 
 jobs:
@@ -10,25 +10,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
       - uses: actions/checkout@v3
 
-      # Step 2: Setup Python
       - uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      # Step 3: Run the Python script to download attachments
       - name: Run Python script
         env:
           EMAIL_USER: ${{ secrets.EMAIL_USER }}
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           IMAP_SERVER: ${{ secrets.IMAP_SERVER }}
           IMAP_PORT: ${{ secrets.IMAP_PORT }}
-          TARGET_SENDER: ${{ secrets.TARGET_SENDER }}
         run: python main.py
 
-      # Step 4: Upload all attachments as artifacts
       - name: Upload all attachments
         uses: actions/upload-artifact@v4
         with:
