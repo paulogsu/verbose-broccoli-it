@@ -24,7 +24,7 @@ def sanitize_filename(filename):
     """Remove invalid characters from filenames"""
     return re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
 
-print("Connecting to Gmail IMAP server...")
+print("Connecting to IMAP server...")
 try:
     with imaplib.IMAP4_SSL(IMAP_SERVER, IMAP_PORT) as mail:
         mail.login(EMAIL_USER, EMAIL_PASS)
