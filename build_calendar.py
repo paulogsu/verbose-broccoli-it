@@ -1,8 +1,11 @@
 import pandas as pd
 from icalendar import Calendar, Event
 from datetime import datetime, timedelta
+import os
+import glob
+import sys
 
-INPUT_EXCEL_FILE = "IT 2025.xlsx"
+EMAIL_ATTACHMENTS_DIR = "email_attachments"
 OUTPUT_ICAL_FILE = "it.ics"
 SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
@@ -37,10 +40,20 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-try: xls = pd.ExcelFile(INPUT_EXCEL_FILE)
-except: exit("ERROR: Cannot read Excel file.")
+# Get the latest Excel file in email_attachments
+excel_files = sorted(glob.glob(os.path.join(EMAIL_ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
+if not excel_files:
+    sys.exit("ERROR: No IT_2025.xlsx file found in email_attachments/")
+INPUT_EXCEL_FILE = excel_files[0]
 
-cal = Calendar(); cal.add('prodid','-//IT Team Schedule//mxm.dk//'); cal.add('version','2.0')
+try:
+    xls = pd.ExcelFile(INPUT_EXCEL_FILE)
+except:
+    sys.exit(f"ERROR: Cannot read Excel file {INPUT_EXCEL_FILE}")
+
+cal = Calendar()
+cal.add('prodid','-//IT Team Schedule//mxm.dk//')
+cal.add('version','2.0')
 all_events = []
 
 for sheet in xls.sheet_names:
@@ -63,7 +76,8 @@ for e in all_events:
     except: continue
 
 if all_events:
-    with open(OUTPUT_ICAL_FILE, "wb") as f: f.write(cal.to_ical())
+    with open(OUTPUT_ICAL_FILE, "wb") as f:
+        f.write(cal.to_ical())
     print(f"Calendar created with {len(all_events)} events: {OUTPUT_ICAL_FILE}")
 else:
     print("No events created. Check Excel data, sheet names, and team member names.")
