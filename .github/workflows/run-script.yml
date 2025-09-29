@@ -10,8 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout repository
+      # Step 1: Checkout repository with push permissions
       - uses: actions/checkout@v3
+        with:
+          persist-credentials: true
 
       # Step 2: Setup Python
       - uses: actions/setup-python@v4
@@ -39,4 +41,3 @@ jobs:
           else
             git commit -m "Add latest attachments from ${TARGET_SENDER}"
             git push
-          fi
