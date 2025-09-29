@@ -23,3 +23,9 @@ jobs:
           IMAP_SERVER: ${{ secrets.IMAP_SERVER }}
           IMAP_PORT: ${{ secrets.IMAP_PORT }}
         run: python main.py
+
+      - name: Upload attachments
+        uses: actions/upload-artifact@v3
+        with:
+          name: attachments
+          path: attachments/
