@@ -6,20 +6,19 @@ import re
 import sys
 import datetime
 import time
-import glob
 import pandas as pd
 from icalendar import Calendar, Event
-from datetime import datetime, timedelta
+from datetime import timedelta
 
-# -------------------- CONFIGURATION --------------------
+# --- CONFIGURATION ---
 EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASS = os.environ.get("EMAIL_PASS")
 IMAP_SERVER = os.environ.get("IMAP_SERVER", "imap.gmail.com")
 IMAP_PORT = int(os.environ.get("IMAP_PORT", 993))
 TARGET_SENDER = os.environ.get("TARGET_SENDER", "paulo.costa@dlh.de")
 
-ATTACHMENTS_DIR = os.path.join(os.getcwd(), "attachments")
-os.makedirs(ATTACHMENTS_DIR, exist_ok=True)
+FILES_DIR = os.path.join(os.getcwd(), "files")  # <-- save attachments here
+os.makedirs(FILES_DIR, exist_ok=True)
 
 OUTPUT_ICAL_FILE = "it.ics"
 SCHEDULE_YEAR = 2025
@@ -32,7 +31,7 @@ TEAM_MEMBERS = [
 SHIFT_TIMES = {'P06':'06:00-14:00','P08':'08:00-16:00','P09':'09:00-17:00','P14':'14:00-22:00','P22':'22:00-06:00'}
 MONTH_MAP = {'jan':1,'feb':2,'mar':3,'apr':4,'may':5,'jun':6,'jul':7,'aug':8,'sep':9,'oct':10,'nov':11,'dec':12}
 
-# -------------------- HELPER FUNCTIONS --------------------
+# --- HELPERS ---
 def sanitize_filename(filename):
     return re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
 
@@ -40,11 +39,9 @@ def is_shift(code):
     code = str(code).strip().upper()
     return code.startswith('P') and any(c.isdigit() for c in code[1:]) if len(code) >= 3 else False
 
-def get_month(sheet):
-    return MONTH_MAP.get(sheet[:3].lower())
+def get_month(sheet): return MONTH_MAP.get(sheet[:3].lower())
 
-def shift_desc(code):
-    return f"{code} ({SHIFT_TIMES[code]})" if code in SHIFT_TIMES else code
+def shift_desc(code): return f"{code} ({SHIFT_TIMES[code]})" if code in SHIFT_TIMES else code
 
 def process_sheet(df, month, person):
     events = []
@@ -61,7 +58,7 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# -------------------- FETCH EMAIL ATTACHMENTS --------------------
+# --- FETCH EMAIL ATTACHMENTS ---
 if not all([EMAIL_USER, EMAIL_PASS, IMAP_SERVER, TARGET_SENDER]):
     sys.exit("ERROR: EMAIL_USER, EMAIL_PASS, IMAP_SERVER, and TARGET_SENDER must be set.")
 
@@ -105,17 +102,10 @@ try:
             filename = part.get_filename()
             if filename:
                 filename = sanitize_filename(filename)
-                filepath = os.path.join(ATTACHMENTS_DIR, filename)
+                filepath = os.path.join(FILES_DIR, filename)
                 with open(filepath, "wb") as f:
                     f.write(part.get_payload(decode=True))
-                    f.flush()
-                    os.fsync(f.fileno())  # ensure fully written
                 print(f"Saved attachment: {filepath}")
-
-                # Pause to ensure file is fully written
-                print("Pausing 30 seconds to ensure file write completion...")
-                time.sleep(30)
-
                 found_any = True
 
         if not found_any:
@@ -126,18 +116,26 @@ try:
 except imaplib.IMAP4.error as e:
     sys.exit(f"IMAP error: {e}")
 
-# -------------------- BUILD CALENDAR --------------------
-# Look for the latest IT_2025 Excel file in attachments/
-excel_files = sorted(glob.glob(os.path.join(ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
-if not excel_files:
-    sys.exit(f"ERROR: No IT_2025.xlsx file found in {ATTACHMENTS_DIR}/")
-INPUT_EXCEL_FILE = excel_files[0]
-print(f"Using Excel file: {INPUT_EXCEL_FILE}")
+# Wait 30 seconds to ensure file is fully written
+print("Pausing 30 seconds to ensure file write completion...")
+time.sleep(30)
+
+# --- BUILD CALENDAR ---
+excel_file = None
+for f in os.listdir(FILES_DIR):
+    if "IT_2025.xlsx" in f:
+        excel_file = os.path.join(FILES_DIR, f)
+        break
+
+if not excel_file:
+    sys.exit(f"ERROR: Cannot find Excel file containing IT_2025.xlsx in {FILES_DIR}")
+
+print(f"Using Excel file: {excel_file}")
 
 try:
-    xls = pd.ExcelFile(INPUT_EXCEL_FILE)
+    xls = pd.ExcelFile(excel_file)
 except Exception as e:
-    sys.exit(f"ERROR: Cannot read Excel file {INPUT_EXCEL_FILE}: {e}")
+    sys.exit(f"ERROR: Cannot read Excel file {excel_file}: {e}")
 
 cal = Calendar()
 cal.add('prodid','-//IT Team Schedule//mxm.dk//')
@@ -148,7 +146,7 @@ for sheet in xls.sheet_names:
     month = get_month(sheet)
     if not month: continue
     try:
-        df = pd.read_excel(INPUT_EXCEL_FILE, sheet_name=sheet)
+        df = pd.read_excel(excel_file, sheet_name=sheet)
     except: continue
     for person in TEAM_MEMBERS:
         all_events.extend(process_sheet(df, month, person))
@@ -156,7 +154,7 @@ for sheet in xls.sheet_names:
 for e in all_events:
     try:
         event = Event()
-        start = datetime(SCHEDULE_YEAR, e['month'], e['day'])
+        start = pd.Timestamp(year=SCHEDULE_YEAR, month=e['month'], day=e['day']).to_pydatetime()
         event.add("summary", f"{e['code']} - {e['person']}")
         event.add("dtstart", start.date())
         event.add("dtend", (start + timedelta(days=1)).date())
@@ -165,8 +163,9 @@ for e in all_events:
     except: continue
 
 if all_events:
-    with open(OUTPUT_ICAL_FILE, "wb") as f:
+    ical_path = os.path.join(FILES_DIR, OUTPUT_ICAL_FILE)
+    with open(ical_path, "wb") as f:
         f.write(cal.to_ical())
-    print(f"Calendar created with {len(all_events)} events: {OUTPUT_ICAL_FILE}")
+    print(f"Calendar created with {len(all_events)} events: {ical_path}")
 else:
     print("No events created. Check Excel data, sheet names, and team member names.")
