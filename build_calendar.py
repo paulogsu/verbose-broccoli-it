@@ -3,9 +3,9 @@ from icalendar import Calendar, Event
 from datetime import datetime, timedelta
 import os
 import sys
+import glob
 
-# Hardcoded path to the Excel file
-INPUT_EXCEL_FILE = "/home/runner/work/verbose-broccoli-it/verbose-broccoli-it/attachments/IT_2025.xlsx"
+EMAIL_ATTACHMENTS_DIR = "email_attachments"
 OUTPUT_ICAL_FILE = "it.ics"
 SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
@@ -40,9 +40,11 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# Verify the file exists
-if not os.path.isfile(INPUT_EXCEL_FILE):
-    sys.exit(f"ERROR: Cannot read Excel file {INPUT_EXCEL_FILE}")
+# Find latest Excel file in email_attachments/
+excel_files = sorted(glob.glob(os.path.join(EMAIL_ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
+if not excel_files:
+    sys.exit(f"ERROR: No IT_2025.xlsx file found in {EMAIL_ATTACHMENTS_DIR}/")
+INPUT_EXCEL_FILE = excel_files[0]
 print(f"Using Excel file: {INPUT_EXCEL_FILE}")
 
 try:
