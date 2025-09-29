@@ -5,7 +5,7 @@ import glob
 import os
 import sys
 
-EMAIL_ATTACHMENTS_DIR = "email_attachments"  # Runner folder
+ATTACHMENTS_DIR = "attachments"  # <- look for Excel here
 OUTPUT_ICAL_FILE = "it.ics"
 SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
@@ -40,10 +40,10 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# Pick latest Excel file in email_attachments/
-excel_files = sorted(glob.glob(os.path.join(EMAIL_ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
+# Pick latest Excel file in attachments/
+excel_files = sorted(glob.glob(os.path.join(ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
 if not excel_files:
-    sys.exit(f"ERROR: No IT_2025.xlsx file found in {EMAIL_ATTACHMENTS_DIR}/")
+    sys.exit(f"ERROR: No IT_2025.xlsx file found in {ATTACHMENTS_DIR}/")
 INPUT_EXCEL_FILE = excel_files[0]
 print(f"Using Excel file: {INPUT_EXCEL_FILE}")
 
