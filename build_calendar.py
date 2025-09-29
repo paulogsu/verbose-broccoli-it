@@ -5,7 +5,8 @@ import glob
 import os
 import sys
 
-EMAIL_ATTACHMENTS_DIR = "email_attachments"
+# Read from the fresh attachments folder
+ATTACHMENTS_DIR = "attachments"
 OUTPUT_ICAL_FILE = "it.ics"
 SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
@@ -22,7 +23,6 @@ def is_shift(code):
     return code.startswith('P') and any(c.isdigit() for c in code[1:]) if len(code) >= 3 else False
 
 def get_month(sheet): return MONTH_MAP.get(sheet[:3].lower())
-
 def shift_desc(code): return f"{code} ({SHIFT_TIMES[code]})" if code in SHIFT_TIMES else code
 
 def process_sheet(df, month, person):
@@ -40,10 +40,10 @@ def process_sheet(df, month, person):
         except: continue
     return events
 
-# Find latest Excel file in email_attachments/
-excel_files = sorted(glob.glob(os.path.join(EMAIL_ATTACHMENTS_DIR, "*IT_2025*.xlsx")), reverse=True)
+# Find latest Excel file in attachments/
+excel_files = sorted(glob.glob(os.path.join(ATTACHMENTS_DIR, "IT_2025*.xlsx")), reverse=True)
 if not excel_files:
-    sys.exit(f"ERROR: No IT_2025.xlsx file found in {EMAIL_ATTACHMENTS_DIR}/")
+    sys.exit(f"ERROR: No IT_2025.xlsx file found in {ATTACHMENTS_DIR}/")
 INPUT_EXCEL_FILE = excel_files[0]
 print(f"Using Excel file: {INPUT_EXCEL_FILE}")
 
