@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   schedule:
     # Runs every day at 22:15 Lisbon time (UTC+1 assumed), adjust UTC as needed
-    - cron: '02 17 * * *'
+    - cron: '15 21 * * *'
 
 permissions:
   contents: write   # allow pushing commits to the repo
@@ -61,3 +61,7 @@ jobs:
           git add email_attachments/
           git commit -m "Add new email attachments ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
           git push origin HEAD:main
+
+      - name: Build calendar
+        if: success()
+        run: python build_calendar.py
