@@ -2,7 +2,7 @@ name: Run Python Script
 
 on:
   schedule:
-    - cron: "0 9 * * *"   # every day at 9 AM UTC
+    - cron: "0 9 * * *"   # runs every day at 9 AM UTC
   workflow_dispatch:
 
 jobs:
@@ -22,11 +22,12 @@ jobs:
           EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
           IMAP_SERVER: ${{ secrets.IMAP_SERVER }}
           IMAP_PORT: ${{ secrets.IMAP_PORT }}
+          TARGET_SENDER: ${{ secrets.TARGET_SENDER }}
         run: python main.py
 
-      - name: Upload all attachments
+      - name: Upload all .xlsx attachments
         uses: actions/upload-artifact@v4
         with:
           name: paulo-attachments
-          path: attachments/
+          path: "*.xlsx"    # upload all .xlsx files from repo root
           retention-days: 7
