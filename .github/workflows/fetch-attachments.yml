@@ -2,6 +2,9 @@ name: Fetch Email Attachments
 
 on:
   workflow_dispatch:
+  schedule:
+    # Runs every day at 22:15 Lisbon time (UTC+1 assumed), adjust UTC as needed
+    - cron: '15 21 * * *'
 
 permissions:
   contents: write   # allow pushing commits to the repo
@@ -48,9 +51,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Copy attachments into tracked folder
+          # Clear old attachments
           rm -rf email_attachments/*
           mkdir -p email_attachments
+
+          # Copy new attachments
           cp -r attachments/* email_attachments/ || true
 
           git add email_attachments/
