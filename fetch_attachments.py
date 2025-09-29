@@ -66,7 +66,6 @@ try:
             filename = part.get_filename()
             if filename:
                 filename = sanitize_filename(filename)
-                timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
                 filepath = os.path.join(ATTACH_DIR, filename)
                 with open(filepath, "wb") as f:
                     f.write(part.get_payload(decode=True))
