@@ -3,6 +3,9 @@ name: Fetch Email Attachments
 on:
   workflow_dispatch:   # Manual trigger
 
+permissions:
+  contents: write 
+
 jobs:
   fetch-attachments:
     runs-on: ubuntu-latest
