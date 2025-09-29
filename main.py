@@ -4,8 +4,9 @@ from email import policy
 import os
 import re
 import sys
+import datetime
 
-# Load configuration from environment variables
+# Configuration from environment variables
 EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASS = os.environ.get("EMAIL_PASS")
 IMAP_SERVER = os.environ.get("IMAP_SERVER", "imap.gmail.com")
@@ -20,7 +21,7 @@ ATTACH_DIR = os.path.join(os.getcwd(), "attachments")
 os.makedirs(ATTACH_DIR, exist_ok=True)
 
 def sanitize_filename(filename):
-    """Sanitize filenames to avoid invalid characters."""
+    """Remove invalid characters from filenames"""
     return re.sub(r"[^a-zA-Z0-9._-]", "_", filename)
 
 print("Connecting to Gmail IMAP server...")
@@ -29,7 +30,7 @@ try:
         mail.login(EMAIL_USER, EMAIL_PASS)
         mail.select("inbox")
 
-        # Search for emails from the target sender
+        # Search emails from target sender
         status, messages = mail.search(None, f'(FROM "{TARGET_SENDER}")')
         if status != "OK":
             sys.exit("Failed to search emails.")
@@ -39,7 +40,7 @@ try:
             print(f"No messages found from {TARGET_SENDER}.")
             sys.exit(0)
 
-        # Only process the newest message
+        # Process the newest message
         newest_msg_id = msg_ids[-1]
         print(f"Processing newest message ID: {newest_msg_id.decode()} from {TARGET_SENDER}")
 
@@ -61,12 +62,12 @@ try:
         print(f"Subject: {subject}")
 
         found_any = False
-        # Save all attachments from this email
         for part in msg.walk():
             filename = part.get_filename()
             if filename:
                 filename = sanitize_filename(filename)
-                filepath = os.path.join(ATTACH_DIR, filename)
+                timestamp = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+                filepath = os.path.join(ATTACH_DIR, f"{timestamp}_{filename}")
                 with open(filepath, "wb") as f:
                     f.write(part.get_payload(decode=True))
                 print(f"Saved attachment: {filepath}")
