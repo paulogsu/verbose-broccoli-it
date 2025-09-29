@@ -3,8 +3,7 @@ name: Fetch Email Attachments & Build Calendar
 on:
   workflow_dispatch:
   schedule:
-    # Runs every day at 22:15 Lisbon time (UTC+1 assumed), adjust UTC as needed
-    - cron: '15 21 * * *'
+    - cron: '15 21 * * *'  # Every day at 22:15 Lisbon time
 
 permissions:
   contents: write
@@ -35,10 +34,12 @@ jobs:
           python -m pip install --upgrade pip
           pip install --upgrade wheel pandas icalendar
 
+      # Step 1: Fetch attachments
       - name: Run email fetch script
         run: python fetch_attachments.py
 
-      - name: Commit new attachments
+      # Step 2: Commit new attachments
+      - name: Commit attachments
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
@@ -51,22 +52,34 @@ jobs:
           git commit -m "Update email attachments ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
           git push origin HEAD:main
 
+      # Step 3: Upload email attachments artifact
+      - name: Upload email attachments artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: email-attachments
+          path: email_attachments/
+
+      # Step 4: Build calendar
       - name: Build calendar
+        if: success()
         run: python build_calendar.py
 
+      # Step 5: Commit calendar file
       - name: Commit calendar
+        if: success()
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
-          mkdir -p email_attachments
           cp it.ics email_attachments/
 
           git add email_attachments/it.ics
           git commit -m "Update calendar ($(date -u +'%Y-%m-%d %H:%M:%S UTC'))" || echo "No changes to commit"
           git push origin HEAD:main
 
-      - name: Upload artifacts
+      # Step 6: Upload artifacts (attachments + calendar)
+      - name: Upload final artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: email-attachments-and-calendar
