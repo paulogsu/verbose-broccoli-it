@@ -41,13 +41,18 @@ try:
 
         found_any = False
 
+        # Process emails from newest to oldest
         for num in reversed(msg_ids):
             status, data = mail.fetch(num, "(RFC822)")
             if status != "OK":
                 print(f"Failed to fetch email {num}, skipping.")
                 continue
 
-            raw_email = next((part[1] for part in data if isinstance(part, tuple) and isinstance(part[1], bytes)), None)
+            # Robust extraction of raw email bytes
+            raw_email = None
+            if data and isinstance(data[0], tuple):
+                raw_email = data[0][1]
+
             if not raw_email:
                 print(f"Skipping email {num}: no email bytes found")
                 continue
@@ -56,6 +61,9 @@ try:
             sender = msg.get("from", "(unknown sender)")
             subject = msg.get("subject", "(no subject)")
             print(f"Processing email {num} from {sender}, subject: {subject}")
+
+            # Debug: print all senders to verify TARGET_SENDER
+            print(f"Sender in email: {sender}")
 
             if TARGET_SENDER.lower() in sender.lower():
                 for part in msg.walk():
