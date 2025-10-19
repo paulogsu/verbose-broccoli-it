@@ -15,7 +15,7 @@ EMAIL_USER = os.environ.get("EMAIL_USER")
 EMAIL_PASS = os.environ.get("EMAIL_PASS")
 IMAP_SERVER = os.environ.get("IMAP_SERVER", "imap.gmail.com")
 IMAP_PORT = int(os.environ.get("IMAP_PORT", 993))
-TARGET_SENDER = os.environ.get("TARGET_SENDER", "paulo.costa@dlh.de")
+TARGET_SENDER = os.environ.get("TARGET_SENDER")
 
 FILES_DIR = os.path.join(os.getcwd(), "files")  # <-- save attachments here
 os.makedirs(FILES_DIR, exist_ok=True)
