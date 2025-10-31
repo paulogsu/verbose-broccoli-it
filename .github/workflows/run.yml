@@ -3,7 +3,7 @@ name: Fetch Email Attachments & Build Calendar
 on:
   workflow_dispatch:
   schedule:
-    - cron: '15 17 * * *'  # every day at 18:15 Lisbon time (UTC+1)
+    - cron: '15 18 * * *'
 
 permissions:
   contents: write
