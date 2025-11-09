@@ -138,7 +138,7 @@ except Exception as e:
     sys.exit(f"ERROR: Cannot read Excel file {excel_file}: {e}")
 
 cal = Calendar()
-cal.add('prodid','-//IT Team Schedule//mxm.dk//')
+cal.add('prodid','-//mxm.dk//')
 cal.add('version','2.0')
 all_events = []
 
