@@ -20,7 +20,7 @@ TARGET_SENDER = os.environ.get("TARGET_SENDER")
 FILES_DIR = os.path.join(os.getcwd(), "files")  # <-- save attachments here
 os.makedirs(FILES_DIR, exist_ok=True)
 
-OUTPUT_ICAL_FILE = "it.ics"
+OUTPUT_ICAL_FILE = "it_schedule.ics"
 SCHEDULE_YEAR = 2025
 TEAM_MEMBERS = [
     "LUISA TAVARES","FABIO FILIPE PEREIRA","ARNOLD LUANZAMBI",
