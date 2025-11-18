@@ -35,7 +35,7 @@ jobs:
           pip install --upgrade wheel pandas icalendar openpyxl
 
       - name: Run fetch & build script
-        run: python run.py run_hub.py
+        run: python run.py
 
       - name: Commit files and calendar
         run: |
