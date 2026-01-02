@@ -21,7 +21,7 @@ FILES_DIR = os.path.join(os.getcwd(), "files")  # <-- save attachments here
 os.makedirs(FILES_DIR, exist_ok=True)
 
 OUTPUT_ICAL_FILE = "it_schedule.ics"
-SCHEDULE_YEAR = 2025
+SCHEDULE_YEAR = 2026
 TEAM_MEMBERS = [
     "LUISA TAVARES","FABIO FILIPE PEREIRA","ARNOLD LUANZAMBI",
     "BEATRIZ SEIXAS","PAULO COSTA","PEDRO SOARES",
@@ -123,12 +123,12 @@ time.sleep(30)
 # --- BUILD CALENDAR ---
 excel_file = None
 for f in os.listdir(FILES_DIR):
-    if "IT_2025.xlsx" in f:
+    if "IT_2026.xlsx" in f:
         excel_file = os.path.join(FILES_DIR, f)
         break
 
 if not excel_file:
-    sys.exit(f"ERROR: Cannot find Excel file containing IT_2025.xlsx in {FILES_DIR}")
+    sys.exit(f"ERROR: Cannot find Excel file containing IT_2026.xlsx in {FILES_DIR}")
 
 print(f"Using Excel file: {excel_file}")
 
